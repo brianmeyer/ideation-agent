@@ -1,16 +1,47 @@
 require('dotenv').config();
 
+// Available models for agent selection
+const AVAILABLE_MODELS = [
+  'gemma2-9b-it',
+  'llama-3.3-70b-versatile',
+  'deepseek-r1-distill-llama-70b',
+  'meta-llama/llama-4-maverick-17b-128e-instruct',
+  'meta-llama/llama-4-scout-17b-16e-instruct',
+  'qwen-qwq-32b'
+];
+
+// Function to randomly select a model from the available models
+const getRandomModel = () => {
+  const randomIndex = Math.floor(Math.random() * AVAILABLE_MODELS.length);
+  return AVAILABLE_MODELS[randomIndex];
+};
+
 module.exports = {
   // Application settings
   PORT: process.env.PORT || 3000,
   NODE_ENV: process.env.NODE_ENV || 'development',
   
   // API configuration
-  API_ENDPOINT: 'https://api.groq.com/openai/v1/chat/completions',
-  API_KEY: process.env.GROQ_API_KEY,
+  API: {
+    endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+    key: process.env.GROQ_API_KEY
+  },
+  
+  // Available models for agent selection
+  AVAILABLE_MODELS: [
+    'gemma2-9b-it',
+    'llama-3.3-70b-versatile',
+    'deepseek-r1-distill-llama-70b',
+    'meta-llama/llama-4-maverick-17b-128e-instruct',
+    'meta-llama/llama-4-scout-17b-16e-instruct',
+    'qwen-qwq-32b'
+  ],
   
   // Ideation settings
-  IDEATION_TIME_LIMIT: 10, // seconds
+  SETTINGS: {
+    ideationTimeLimit: 10,
+    maxIterations: 3
+  },
   
   // Model configuration
   MODELS: {
@@ -32,7 +63,6 @@ module.exports = {
   AGENTS: {
     REASONING: {
       name: 'Reasoning Agent (DeepSeek)',
-      model: 'deepseek-r1-distill-llama-70b',
       role: `You are a Reasoning Agent (DeepSeek). Your role is to analyze problems step by step, break down complex ideas, and identify logical connections. Focus on clear, structured analysis.
 
 When you respond, format your analysis as follows:
@@ -59,7 +89,6 @@ Be concise and focused.`,
     },
     CREATIVE: {
       name: 'Creative Agent (QWQ-32)',
-      model: 'qwen-qwq-32b',
       role: `You are a Creative Agent (QWQ-32). Your role is to generate innovative ideas and explore unconventional solutions.
 
 When you respond, you MUST provide multiple distinct ideas (at least 3). Each idea must be completely different from the others.
@@ -96,7 +125,7 @@ Be creative but practical.`,
     },
     LOGICAL: {
       name: 'Logical Agent (Gemma)',
-      model: 'gemma2-9b-it',
+      getModel: getRandomModel,
       role: `You are a Logical Agent (Gemma). Your role is to evaluate ideas critically and ensure solutions are practical.
 
 When you respond, structure your evaluation as follows:

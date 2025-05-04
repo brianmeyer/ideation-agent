@@ -9,12 +9,7 @@ class MagenticOneService {
       creative: config.AGENTS.CREATIVE,
       logical: config.AGENTS.LOGICAL
     };
-    this.models = {
-      reasoning: config.MODELS.REASONING,
-      creative: config.MODELS.CREATIVE,
-      logical: config.MODELS.LOGICAL
-    };
-    this.ideationTimeLimit = config.IDEATION_TIME_LIMIT || 120; // seconds
+    this.ideationTimeLimit = config.SETTINGS.ideationTimeLimit || 10; // seconds
     this.activeSessions = new Map();
     this.responseCache = new Map();
   }
@@ -26,7 +21,10 @@ class MagenticOneService {
       
       // Initial brainstorming with creative agent
       console.log('Getting initial brainstorming ideas...');
-      const brainstormingPrompt = `You are in brainstorming mode. Your task is to generate multiple diverse ideas using a mindmap model, and focusing on edge or almost impossible solutions or ideas in response to this question:
+      const brainstormingPrompt = `You are in brainstorming mode. Your task is to generate multiple diverse ideas that range from practical solutions to innovative research directions. For each idea, indicate whether it's:
+- "Practical Now": Implementable with current technology
+- "Near Future": Requires some technological advancement (1-5 years)
+- "Research Direction": Novel concept requiring significant research
 
 "${message}"
 
@@ -34,11 +32,13 @@ CRITICAL REQUIREMENTS:
 1. You MUST provide at least 3 COMPLETELY DIFFERENT ideas
 2. Each idea must be unique and not related to the others
 3. Do not combine multiple ideas into one
-4. Follow the exact structure below for EACH idea
+4. Include a mix of practical and research-oriented ideas
+5. Follow the exact structure below for EACH idea
 
 For each idea, use this EXACT structure:
 
 IDEA #[number]: [Title]
+- Implementation Timeline: [Practical Now / Near Future / Research Direction]
 - Core Concept: [One sentence description]
 - Key Features:
   * [Feature 1]
@@ -47,17 +47,21 @@ IDEA #[number]: [Title]
 - Potential Benefits:
   * [Benefit 1]
   * [Benefit 2]
-- Edge Case/Innovation: [What makes this idea unique or seemingly impossible?]
+- Innovation/Research Aspects:
+  * [What makes this idea unique or groundbreaking]
+  * [Required technological advancements or research areas]
+  * [Potential breakthroughs or discoveries needed]
 
 Remember:
 - You MUST provide at least 3 ideas
 - Each idea must be completely different
 - Use the exact structure above
-- Number each idea (IDEA #1, IDEA #2, etc.)
-- Focus on edge cases and seemingly impossible solutions
-- Think outside the box and avoid conventional ideas`;
+- Include at least one practical solution
+- Include at least one research direction
+- Think both inside and outside current technological constraints
+- Consider both immediate applications and future possibilities`;
       
-      const creativeIdeas = await this.getAgentResponse('creative', brainstormingPrompt, history, 'brainstorming');
+      const creativeResponse = await this.getAgentResponse('creative', brainstormingPrompt, history, 'brainstorming');
       
       // Add a small delay to ensure proper sequencing
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -65,7 +69,7 @@ Remember:
       // Store creative response in history
       const updatedHistory = [
         ...history,
-        { role: 'assistant', content: creativeIdeas }
+        { role: 'assistant', content: creativeResponse.content }
       ];
 
       // Create array of remaining agents and shuffle them
@@ -73,7 +77,7 @@ Remember:
       const shuffledAgents = this.shuffleArray(remainingAgents);
       
       // Process remaining agents in shuffled order
-      let previousResponses = { creative: creativeIdeas };
+      let previousResponses = { creative: creativeResponse.content };
       let lastAgent = 'creative';
 
       for (const agentType of shuffledAgents) {
@@ -85,8 +89,8 @@ Remember:
         // Add a small delay between agent responses
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        previousResponses[agentType] = response;
-        updatedHistory.push({ role: 'assistant', content: response });
+        previousResponses[agentType] = response.content;
+        updatedHistory.push({ role: 'assistant', content: response.content });
         lastAgent = agentType;
       }
       
@@ -100,9 +104,9 @@ Remember:
         
         console.log(`Starting new iteration (${elapsedTime.toFixed(1)}s elapsed)...`);
         
-        // Get each agent's perspective in random order, avoiding last agent and creative agent
+        // Get each agent's perspective in random order, excluding creative agent
         const availableAgents = Object.keys(this.agents)
-          .filter(agent => agent !== lastAgent && agent !== 'creative');
+          .filter(agent => agent !== 'creative');
         const shuffledIterationAgents = this.shuffleArray(availableAgents);
         
         // Process agents sequentially instead of in parallel
@@ -115,9 +119,9 @@ Remember:
           // Add a small delay between agent responses
           await new Promise(resolve => setTimeout(resolve, 1000));
           
-          agentResponses.push({ agent: agentType, response });
-          previousResponses[agentType] = response;
-          updatedHistory.push({ role: 'assistant', content: response });
+          agentResponses.push({ agent: agentType, response: response.content });
+          previousResponses[agentType] = response.content;
+          updatedHistory.push({ role: 'assistant', content: response.content });
           lastAgent = agentType;
         }
         
@@ -144,12 +148,12 @@ Remember:
         throw new Error(`Invalid agent type: ${agentType}`);
       }
 
-      if (!config.API_KEY) {
+      if (!config.API.key) {
         throw new Error('API key is not configured. Please check your environment variables.');
       }
 
       const agent = this.agents[agentType];
-      const model = this.models[agentType];
+      const model = config.AVAILABLE_MODELS[Math.floor(Math.random() * config.AVAILABLE_MODELS.length)];
       const messages = [
         { role: 'system', content: agent.role },
         ...history.map(msg => ({ role: msg.role, content: msg.content })),
@@ -158,21 +162,21 @@ Remember:
 
       console.log(`Making API call for ${agentType} agent using model ${model}...`);
       
-      const response = await axios.post(config.API_ENDPOINT, {
+      const response = await axios.post(config.API.endpoint, {
         model: model,
         messages,
         temperature: agent.temperature,
-        max_tokens: 4000, // Increased from default to ensure complete responses
-        top_p: config.DEFAULT_PARAMS.top_p,
-        frequency_penalty: config.DEFAULT_PARAMS.frequency_penalty,
-        presence_penalty: config.DEFAULT_PARAMS.presence_penalty,
-        stream: false // Ensure we get the complete response
+        max_tokens: 4000,
+        top_p: 0.9,
+        frequency_penalty: 0.5,
+        presence_penalty: 0.5,
+        stream: false
       }, {
         headers: {
-          'Authorization': `Bearer ${config.API_KEY}`,
+          'Authorization': `Bearer ${config.API.key}`,
           'Content-Type': 'application/json'
         },
-        timeout: 30000 // 30 second timeout
+        timeout: 30000
       });
 
       if (!response.data || !response.data.choices || !response.data.choices[0] || !response.data.choices[0].message) {
@@ -184,33 +188,21 @@ Remember:
       // Filter out <think> portions
       content = content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
       
-      console.log(`Received complete response for ${agentType} agent (${content.length} characters)`);
+      console.log(`Received complete response for ${agentType} agent using model ${model} (${content.length} characters)`);
       
       // Ensure we have the complete response
       if (content.length >= 4000) {
         console.warn(`Response from ${agentType} agent may be truncated (${content.length} characters)`);
       }
 
-      return content;
+      return {
+        content,
+        model,
+        agentType
+      };
     } catch (error) {
       console.error(`Error in getAgentResponse for ${agentType}:`, error.response?.data || error.message);
-      
-      // Provide more specific error messages
-      if (error.response) {
-        if (error.response.status === 401) {
-          throw new Error('Invalid API key. Please check your GROQ_API_KEY environment variable.');
-        } else if (error.response.status === 429) {
-          throw new Error('Rate limit exceeded. Please try again later.');
-        } else if (error.response.status === 404) {
-          throw new Error('Model not found. Please check your model configuration.');
-        } else {
-          throw new Error(`API error: ${error.response.data?.error?.message || error.message}`);
-        }
-      } else if (error.request) {
-        throw new Error('No response received from API. Please check your internet connection.');
-      } else {
-        throw new Error(`Error making request: ${error.message}`);
-      }
+      throw error;
     }
   }
 
@@ -224,7 +216,18 @@ Remember:
       })
       .join('\n\n');
 
-    return `Previous agent perspectives:\n\n${agentContexts}\n\nBased on these perspectives, please provide your analysis as the ${this.agents[currentAgent].name}.`;
+    // Special prompt for creative agent during iterations
+    if (currentAgent === 'creative') {
+      return `Previous agent perspectives:\n\n${agentContexts}\n\nAs the Creative Agent, your role in this iteration is to:
+1. Build upon the existing startup ideas
+2. Suggest creative improvements or modifications to the ideas
+3. Identify novel connections between different aspects of the ideas
+4. Propose innovative ways to enhance the ideas
+
+Please provide your creative insights and suggestions based on the perspectives above, focusing on improving the startup ideas.`;
+    }
+
+    return `Previous agent perspectives:\n\n${agentContexts}\n\nBased on these perspectives, please provide your analysis as the ${this.agents[currentAgent].name}, focusing on evaluating and improving the startup ideas.`;
   }
 
   hasReachedConsensus(agentResponses) {
@@ -254,45 +257,69 @@ Remember:
 
   async generateFinalResponse(previousResponses) {
     try {
-      // First, get a creative synthesis of the ideas
-      const creativeContext = Object.entries(previousResponses)
-        .map(([agent, response]) => `${this.agents[agent].name}'s perspective:\n${response}`)
-        .join('\n\n');
+      const synthesisPrompt = `Based on the collaborative ideation process, provide a final synthesis that:
+
+1. Summarizes the key ideas and insights
+2. Identifies the most promising solutions
+3. Outlines practical next steps
+
+Previous Responses:
+${Object.entries(previousResponses)
+  .map(([agent, response]) => `${this.agents[agent].name}:\n${response}`)
+  .join('\n\n')}
+
+Please structure your response EXACTLY as follows:
+
+🎯 Final Recommendation:
+[Your main recommendation or conclusion, must answer the original quesiton with enough context]
+
+💡 Key Insights:
+[3-5 key insights or findings]
+
+⚖️ Practical Considerations:
+[3-5 practical steps or considerations for implementation]
+
+CRITICAL REQUIREMENTS:
+1. You MUST include ALL three sections (Final Recommendation, Key Insights, Practical Considerations)
+2. Each section MUST be clearly labeled with the emoji and title
+3. The response MUST be properly formatted with line breaks between sections
+4. The content MUST be concise and actionable`;
+
+      const model = config.AVAILABLE_MODELS[Math.floor(Math.random() * config.AVAILABLE_MODELS.length)];
+      const response = await axios.post(config.API.endpoint, {
+        model: model,
+        messages: [
+          { role: 'system', content: 'You are a synthesis agent that combines multiple perspectives into clear, actionable insights.' },
+          { role: 'user', content: synthesisPrompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000,
+        top_p: 0.9,
+        frequency_penalty: 0.5,
+        presence_penalty: 0.5,
+        stream: false
+      }, {
+        headers: {
+          'Authorization': `Bearer ${config.API.key}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 30000
+      });
+
+      if (!response.data || !response.data.choices || !response.data.choices[0] || !response.data.choices[0].message) {
+        throw new Error('Invalid response format from API');
+      }
+
+      let content = response.data.choices[0].message.content;
       
-      const creativePrompt = `As a creative synthesizer, identify the most innovative and unique elements from these perspectives. Focus on novel combinations and unexpected insights:\n\n${creativeContext}`;
-      const creativeSynthesis = await this.getAgentResponse('creative', creativePrompt, [], 'creative_synthesis');
+      // Ensure the response has all required sections
+      if (!content.includes('🎯 Final Recommendation:') || 
+          !content.includes('💡 Key Insights:') || 
+          !content.includes('⚖️ Practical Considerations:')) {
+        content = `🎯 Final Recommendation:\n${content}\n\n💡 Key Insights:\n- Key insight 1\n- Key insight 2\n- Key insight 3\n\n⚖️ Practical Considerations:\n- Consideration 1\n- Consideration 2\n- Consideration 3`;
+      }
 
-      // Then, get a logical evaluation of the synthesis
-      const logicalPrompt = `Evaluate this creative synthesis for feasibility and practical implementation. Identify strengths and potential challenges:\n\n${creativeSynthesis}`;
-      const logicalEvaluation = await this.getAgentResponse('logical', logicalPrompt, [], 'logical_evaluation');
-
-      // Get the original question from the first message in history
-      const history = await historyManager.getHistory();
-      const originalQuestion = history.length > 0 ? history[0].content : '';
-
-      // Finally, get a reasoned final recommendation
-      const finalPrompt = `Original Question: "${originalQuestion}"
-
-Based on the creative synthesis and logical evaluation, provide a concise final recommendation (max 3 paragraphs) that balances innovation with practicality.
-
-Before providing your recommendation, please:
-1. Review the original question above and ensure your answer directly addresses it
-2. Check that all aspects of the question have been covered
-3. Verify that the answer is complete and doesn't leave any key points unaddressed
-4. Confirm that the response maintains relevance to the original query
-5. If the response doesn't fully address the question, explain what aspects need more attention
-
-Creative Synthesis:
-${creativeSynthesis}
-
-Logical Evaluation:
-${logicalEvaluation}
-
-Please provide a clear, concise final recommendation (max 3 paragraphs) that fully answers the original question while incorporating both creative insights and practical considerations. Focus on the most important points and actionable next steps.`;
-      const finalRecommendation = await this.getAgentResponse('reasoning', finalPrompt, [], 'final_recommendation');
-
-      // Format the final response to include all perspectives and question relevance
-      return `🎯 Final Recommendation:\n\n${finalRecommendation}\n\n💡 Key Insights:\n${creativeSynthesis}\n\n⚖️ Practical Considerations:\n${logicalEvaluation}`;
+      return content;
     } catch (error) {
       console.error('Error generating final response:', error);
       throw error;

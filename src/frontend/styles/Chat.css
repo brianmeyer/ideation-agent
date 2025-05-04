@@ -382,4 +382,11 @@ body {
   word-wrap: break-word;
 }
 
+.message-model {
+  font-size: 0.8em;
+  color: #666;
+  margin-left: 10px;
+  font-style: italic;
+}
+
  

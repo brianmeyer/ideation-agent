@@ -74,6 +74,7 @@ const Chat = () => {
       setMessages(prev => [...prev, {
         role: data.role,
         content: data.content,
+        model: data.model,
         timestamp: new Date(data.timestamp),
         isFinal: false
       }]);
@@ -146,12 +147,22 @@ const Chat = () => {
               <span className="message-role">
                 {msg.role === 'user' ? 'You' : getAgentDisplayName(msg.role)}
               </span>
+              {msg.model && (
+                <span className="message-model">
+                  Model: {msg.model}
+                </span>
+              )}
               <span className="message-time">
                 {msg.timestamp.toLocaleTimeString()}
               </span>
             </div>
             <div className="message-content">
-              <ReactMarkdown>{msg.content}</ReactMarkdown>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm, remarkBreaks]}
+                rehypePlugins={[rehypeRaw, rehypeSanitize]}
+              >
+                {msg.content}
+              </ReactMarkdown>
             </div>
           </div>
         ))}

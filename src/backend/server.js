@@ -119,12 +119,13 @@ io.on('connection', (socket) => {
         message: 'Generating ideas...'
       });
       
-      const creativeIdeas = await magenticOneService.getAgentResponse('creative', validatedMessage, [], 'brainstorming');
+      const creativeResponse = await magenticOneService.getAgentResponse('creative', validatedMessage, [], 'brainstorming');
       
       io.emit('agent_message', {
         role: 'creative',
-        content: creativeIdeas,
-        timestamp: new Date()
+        content: creativeResponse.content,
+        model: creativeResponse.model,
+        timestamp: new Date().toISOString()
       });
       
       io.emit('agent_status', {
@@ -133,12 +134,15 @@ io.on('connection', (socket) => {
         message: 'Breaking down the problem...'
       });
       
-      const initialAnalysis = await magenticOneService.getAgentResponse('reasoning', creativeIdeas, [], 'initial_analysis');
+      const reasoningContext = `Original message: "${validatedMessage}"\n\nCreative Agent's ideas:\n${creativeResponse.content}\n\nPlease analyze these ideas and provide your reasoning about their feasibility, potential impact, and implementation challenges.`;
+      
+      const reasoningResponse = await magenticOneService.getAgentResponse('reasoning', reasoningContext, [], 'initial_analysis');
       
       io.emit('agent_message', {
         role: 'reasoning',
-        content: initialAnalysis,
-        timestamp: new Date()
+        content: reasoningResponse.content,
+        model: reasoningResponse.model,
+        timestamp: new Date().toISOString()
       });
       
       io.emit('agent_status', {
@@ -147,23 +151,24 @@ io.on('connection', (socket) => {
         message: 'Evaluating solutions...'
       });
       
-      const logicalEvaluation = await magenticOneService.getAgentResponse('logical', initialAnalysis, [], 'evaluation');
+      const logicalResponse = await magenticOneService.getAgentResponse('logical', reasoningResponse.content, [], 'evaluation');
       
       io.emit('agent_message', {
         role: 'logical',
-        content: logicalEvaluation,
-        timestamp: new Date()
+        content: logicalResponse.content,
+        model: logicalResponse.model,
+        timestamp: new Date().toISOString()
       });
       
       // Start collaborative iteration
       let previousResponses = {
-        creative: creativeIdeas,
-        reasoning: initialAnalysis,
-        logical: logicalEvaluation
+        creative: creativeResponse.content,
+        reasoning: reasoningResponse.content,
+        logical: logicalResponse.content
       };
       
       const startTime = Date.now();
-      const IDEATION_TIME_LIMIT = config.IDEATION_TIME_LIMIT;
+      const IDEATION_TIME_LIMIT = config.SETTINGS.ideationTimeLimit;
       
       while (true) {
         const elapsedTime = (Date.now() - startTime) / 1000;
@@ -176,27 +181,23 @@ io.on('connection', (socket) => {
           message: `Time remaining: ${Math.ceil(IDEATION_TIME_LIMIT - elapsedTime)}s`
         });
         
-        const agentResponses = await Promise.all(
-          Object.keys(magenticOneService.agents).map(async (agentType) => {
-            const context = magenticOneService.buildCollaborationContext(previousResponses, agentType);
-            const response = await magenticOneService.getAgentResponse(agentType, context, [], `iteration_${Math.floor(elapsedTime)}`);
-            
-            io.emit('agent_message', {
-              role: agentType,
-              content: response,
-              timestamp: new Date()
-            });
-            
-            return { agent: agentType, response };
-          })
-        );
-        
-        agentResponses.forEach(({ agent, response }) => {
-          previousResponses[agent] = response;
-        });
-        
-        // Add a small delay between iterations
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Process agents sequentially instead of in parallel to maintain context
+        for (const agentType of Object.keys(magenticOneService.agents)) {
+          const context = magenticOneService.buildCollaborationContext(previousResponses, agentType);
+          const response = await magenticOneService.getAgentResponse(agentType, context, [], `iteration_${Math.floor(elapsedTime)}`);
+          
+          io.emit('agent_message', {
+            role: agentType,
+            content: response.content,
+            model: response.model,
+            timestamp: new Date().toISOString()
+          });
+          
+          previousResponses[agentType] = response.content;
+          
+          // Add a small delay between agent responses
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       }
       
       // Generate final response using the improved synthesis method

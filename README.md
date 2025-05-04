@@ -1,25 +1,21 @@
 # Ideation Agent
 
-A powerful multiagent system for collaborative ideation and brainstorming, leveraging AI to generate and refine innovative ideas.
+A collaborative AI system that uses multiple specialized agents to generate, analyze, and refine innovative ideas.
+
+## Overview
+
+Ideation Agent employs three specialized AI agents working together to generate and refine ideas:
+
+- **Creative Agent**: Generates innovative ideas and explores novel concepts
+- **Reasoning Agent**: Analyzes ideas for feasibility and potential impact
+- **Logical Agent**: Evaluates practical implementation and identifies risks
 
 ## Features
 
-- 🤖 **Multi-Agent Collaboration**: Three specialized AI agents working together:
-  - Creative Agent: Generates innovative ideas
-  - Reasoning Agent: Analyzes and refines concepts
-  - Logical Agent: Evaluates feasibility and implementation
-- 💡 **Dynamic Ideation**: Real-time idea generation and refinement
-- 🔄 **Interactive Process**: Collaborative iteration between agents
-- ⚡ **Real-time Updates**: Live feedback and idea evolution
-- 🎯 **Structured Output**: Clear, actionable recommendations
-
-## Tech Stack
-
-- **Frontend**: React, Socket.IO Client
-- **Backend**: Node.js, Express, Socket.IO
-- **AI**: Groq API
-- **Testing**: Jest
-- **Build Tools**: Webpack, Babel
+- **Multi-Agent Collaboration**: Three specialized agents work together to generate and refine ideas
+- **Real-time Interaction**: WebSocket-based communication for immediate feedback
+- **Model Rotation**: Randomly selects from available models for each agent response
+- **Structured Output**: Clear, actionable recommendations with key insights and practical considerations
 
 ## Quick Start
 
@@ -34,29 +30,69 @@ A powerful multiagent system for collaborative ideation and brainstorming, lever
    npm install
    ```
 
-3. Start the development server:
+3. Configure the application:
+   - Copy `config.example.js` to `config.js`
+   - Update the configuration with your API keys and settings
+
+4. Start the development server:
    ```bash
    npm run dev
    ```
 
-4. Open [http://localhost:8081](http://localhost:8081) in your browser
+The application will be available at `http://localhost:8081`
 
 ## Configuration
 
-The system is configured through `src/config/config.js`. Key settings include:
+The `config.js` file contains all necessary configuration:
 
-- API endpoints and keys
-- Agent roles and parameters
-- System prompts and templates
-- Timeouts and limits
+```javascript
+module.exports = {
+  API: {
+    key: 'your-api-key',
+    endpoint: 'your-api-endpoint'
+  },
+  AGENTS: {
+    creative: {
+      name: 'Creative Agent',
+      role: 'You are a creative agent...',
+      temperature: 0.9
+    },
+    reasoning: {
+      name: 'Reasoning Agent',
+      role: 'You are a reasoning agent...',
+      temperature: 0.7
+    },
+    logical: {
+      name: 'Logical Agent',
+      role: 'You are a logical agent...',
+      temperature: 0.5
+    }
+  },
+  AVAILABLE_MODELS: [
+    'gemma2-9b-it',
+    'llama-3.3-70b-versatile',
+    'deepseek-r1-distill-llama-70b',
+    'meta-llama/llama-4-maverick-17b-128e-instruct',
+    'meta-llama/llama-4-scout-17b-16e-instruct',
+    'qwen-qwq-32b'
+  ],
+  SETTINGS: {
+    ideationTimeLimit: 10 // seconds
+  }
+};
+```
 
-## Documentation
+## Development
 
-For detailed documentation, see [DOCUMENTATION.md](DOCUMENTATION.md)
+Available scripts:
+- `npm run dev`: Start development server
+- `npm run build`: Build for production
+- `npm run test`: Run tests
+- `npm run lint`: Run linter
 
 ## Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
 ## License
 
