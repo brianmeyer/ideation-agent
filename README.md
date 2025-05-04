@@ -1,105 +1,67 @@
-# Magentic One Web Chat
+# Ideation Agent
 
-A collaborative ideation platform powered by multiple AI agents, featuring a modern dark-themed interface with real-time chat capabilities. The platform uses a unique multi-agent system where specialized AI agents work together to generate, evaluate, and refine innovative ideas.
+A powerful multiagent system for collaborative ideation and brainstorming, leveraging AI to generate and refine innovative ideas.
 
-## 🚀 Quick Start
+## Features
 
-```bash
-# Clone the repository
-git clone https://github.com/brianmeyer/magentic-one-web-chat.git
+- 🤖 **Multi-Agent Collaboration**: Three specialized AI agents working together:
+  - Creative Agent: Generates innovative ideas
+  - Reasoning Agent: Analyzes and refines concepts
+  - Logical Agent: Evaluates feasibility and implementation
+- 💡 **Dynamic Ideation**: Real-time idea generation and refinement
+- 🔄 **Interactive Process**: Collaborative iteration between agents
+- ⚡ **Real-time Updates**: Live feedback and idea evolution
+- 🎯 **Structured Output**: Clear, actionable recommendations
 
-# Navigate to the project directory
-cd magentic-one-web-chat
+## Tech Stack
 
-# Install dependencies
-npm install
+- **Frontend**: React, Socket.IO Client
+- **Backend**: Node.js, Express, Socket.IO
+- **AI**: Groq API
+- **Testing**: Jest
+- **Build Tools**: Webpack, Babel
 
-# Start the development server
-npm run dev
-```
+## Quick Start
 
-## ✨ Key Features
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/brianmeyer/ideation-agent.git
+   cd ideation-agent
+   ```
 
-- 🤖 **Multi-Agent Collaboration**
-  - Creative Agent: Generates innovative ideas with structured format
-  - Reasoning Agent: Analyzes and evaluates ideas
-  - Logical Agent: Assesses feasibility and implementation
-  - Collaborative iteration with randomized agent order
-  - 10-second time limit for rapid ideation
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-- 💡 **Structured Ideation Process**
-  - Initial brainstorming with multiple distinct ideas
-  - Sequential agent analysis and feedback
-  - Consensus-based iteration
-  - Final synthesis with actionable recommendations
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-- 🎨 **Modern Interface**
-  - Dark theme with intuitive design
-  - Real-time updates and animations
-  - Responsive across all devices
-  - Smooth scrolling and message history
+4. Open [http://localhost:8081](http://localhost:8081) in your browser
 
-## 📚 Documentation
+## Configuration
 
-For detailed information about:
-- Complete setup instructions
-- Technical architecture
-- Agent capabilities and roles
-- Troubleshooting
-- Contributing guidelines
+The system is configured through `src/config/config.js`. Key settings include:
 
-Please refer to [DOCUMENTATION.md](DOCUMENTATION.md)
+- API endpoints and keys
+- Agent roles and parameters
+- System prompts and templates
+- Timeouts and limits
 
-## 🛠️ Tech Stack
+## Documentation
 
-- **Frontend**
-  - React
-  - Socket.IO for real-time communication
-  - Modern CSS with smooth animations
+For detailed documentation, see [DOCUMENTATION.md](DOCUMENTATION.md)
 
-- **Backend**
-  - Node.js
-  - Express
-  - Socket.IO for real-time communication
-  - Groq API integration
+## Contributing
 
-- **AI Models**
-  - Creative: Qwen QWQ-32B
-  - Reasoning: DeepSeek R1 Distill Llama 70B
-  - Logical: Gemma 2 9B IT
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-## ⚙️ Configuration
+## License
 
-The application is configured through `src/config/config.js`. Key settings include:
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-```javascript
-// Application settings
-PORT: 3000
-NODE_ENV: 'development'
+## Contact
 
-// API configuration
-API_ENDPOINT: 'https://api.groq.com/openai/v1/chat/completions'
-API_KEY: 'your_api_key_here'
-
-// Ideation settings
-IDEATION_TIME_LIMIT: 10 // seconds
-
-// Model configuration
-MODELS: {
-  REASONING: 'deepseek-r1-distill-llama-70b',
-  CREATIVE: 'qwen-qwq-32b',
-  LOGICAL: 'gemma2-9b-it'
-}
-```
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) for details
-
-## 📞 Contact
-
-For questions or support, please open an issue in the repository. 
+Brian Meyer - [@brianmeyer](https://github.com/brianmeyer) 
