@@ -1,21 +1,22 @@
 .message-input-container {
-  background: white;
-  border-top: 1px solid #e9ecef;
+  background: #1e293b;
+  border-top: 1px solid #374151;
   padding: 1rem;
+  color: #e2e8f0;
 }
 
 .command-hints {
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
+  background: #374151;
+  border: 1px solid #4b5563;
   border-radius: 8px;
   margin-bottom: 0.75rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   overflow: hidden;
   animation: slideUp 0.2s ease-out;
 }
 
 .hints-header {
-  background: #007bff;
+  background: #6366f1;
   color: white;
   padding: 0.5rem 0.75rem;
   font-size: 0.8rem;
@@ -26,14 +27,15 @@
   padding: 0.5rem 0.75rem;
   cursor: pointer;
   transition: background-color 0.2s ease;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid #4b5563;
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  color: #e2e8f0;
 }
 
 .command-hint:hover {
-  background: #e9ecef;
+  background: #4b5563;
 }
 
 .command-hint:last-child {
@@ -41,7 +43,7 @@
 }
 
 .command-hint code {
-  background: #007bff;
+  background: #6366f1;
   color: white;
   padding: 0.15rem 0.4rem;
   border-radius: 4px;
@@ -52,7 +54,7 @@
 }
 
 .command-hint span {
-  color: #6c757d;
+  color: #9ca3af;
   font-size: 0.85rem;
 }
 
@@ -65,15 +67,15 @@
   align-items: flex-end;
   gap: 0.75rem;
   padding: 0.75rem;
-  background: #f8f9fa;
+  background: #374151;
   border-radius: 12px;
   border: 2px solid transparent;
   transition: border-color 0.2s ease;
 }
 
 .input-wrapper:focus-within {
-  border-color: #007bff;
-  background: white;
+  border-color: #6366f1;
+  background: #4b5563;
 }
 
 .message-textarea {
@@ -86,6 +88,7 @@
   max-height: 150px;
   min-height: 24px;
   font-family: inherit;
+  color: #e2e8f0;
 }
 
 .message-textarea:focus {
@@ -94,12 +97,12 @@
 }
 
 .message-textarea::placeholder {
-  color: #adb5bd;
+  color: #9ca3af;
 }
 
 .send-button {
   padding: 0.5rem;
-  background: #007bff;
+  background: #6366f1;
   color: white;
   border-radius: 8px;
   font-size: 1.2rem;
@@ -113,12 +116,12 @@
 }
 
 .send-button:hover:not(:disabled) {
-  background: #0056b3;
+  background: #5b21b6;
   transform: translateY(-1px);
 }
 
 .send-button:disabled {
-  background: #6c757d;
+  background: #6b7280;
   cursor: not-allowed;
   transform: none;
 }
@@ -131,9 +134,9 @@
 
 .quick-command {
   padding: 0.4rem 0.75rem;
-  background: white;
-  color: #007bff;
-  border: 1px solid #007bff;
+  background: #374151;
+  color: #6366f1;
+  border: 1px solid #6366f1;
   border-radius: 16px;
   font-size: 0.8rem;
   font-weight: 500;
@@ -141,7 +144,7 @@
 }
 
 .quick-command:hover:not(:disabled) {
-  background: #007bff;
+  background: #6366f1;
   color: white;
   transform: translateY(-1px);
 }

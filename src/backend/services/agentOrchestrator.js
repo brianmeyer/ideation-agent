@@ -41,6 +41,13 @@ class AgentOrchestrator {
       'gemma2-9b-it'
     ];
 
+    // Reasoning agent limited to reasoning-specific models
+    this.reasoningModels = [
+      'deepseek-r1-distill-llama-70b',
+      'openai/gpt-oss-120b',
+      'llama-3.3-70b-versatile'
+    ];
+
     this.timeLimit = parseInt(process.env.IDEATION_TIME_LIMIT) || 60000; // 60 seconds default
   }
 
@@ -119,7 +126,7 @@ class AgentOrchestrator {
   }
 
   /**
-   * Phase 2: 60 seconds of randomized agents (no back-to-back repeats)
+   * Phase 2: 60 seconds of randomized agents with weighted balanced selection (no back-to-back repeats)
    */
   async executePhase2(prompt, context, phase1Results, startTime) {
     const phase2TimeLimit = 60000; // 60 seconds
@@ -128,13 +135,15 @@ class AgentOrchestrator {
     let iterationCount = 0;
     
     const agents = ['creative', 'logical', 'reasoning'];
+    // Track usage count for balanced selection
+    let agentUsageCount = { creative: 0, logical: 0, reasoning: 0 };
     
     while (Date.now() - startTime < phase2TimeLimit && iterationCount < 10) {
       iterationCount++;
       
-      // Select random agent (different from last one)
+      // Select agent using weighted balanced approach (excluding last agent)
       let availableAgents = agents.filter(agent => agent !== lastAgent);
-      const selectedAgent = availableAgents[Math.floor(Math.random() * availableAgents.length)];
+      const selectedAgent = this.selectBalancedAgent(availableAgents, agentUsageCount);
       
       logger.info(`Phase 2.${iterationCount}: ${selectedAgent.toUpperCase()} Agent - Expansion iteration`);
       
@@ -150,13 +159,54 @@ class AgentOrchestrator {
           content: response,
           timestamp: Date.now() - startTime
         });
+        
+        // Track usage for balanced selection
+        agentUsageCount[selectedAgent]++;
       }
       
       lastAgent = selectedAgent;
     }
     
     logger.info(`Phase 2 completed with ${expansionResults.length} expansion iterations in ${(Date.now() - startTime)/1000}s`);
+    logger.info(`Phase 2 agent usage: Creative: ${agentUsageCount.creative}, Logical: ${agentUsageCount.logical}, Reasoning: ${agentUsageCount.reasoning}`);
     return expansionResults;
+  }
+
+  /**
+   * Select agent using weighted balanced approach - prioritizes least-used agents
+   * @param {Array} availableAgents - Agents available for selection (excluding last agent)
+   * @param {Object} usageCount - Current usage count for each agent
+   * @returns {string} Selected agent
+   */
+  selectBalancedAgent(availableAgents, usageCount) {
+    // Calculate weights - agents with lower usage get higher weight
+    const minUsage = Math.min(...availableAgents.map(agent => usageCount[agent]));
+    const maxUsage = Math.max(...availableAgents.map(agent => usageCount[agent]));
+    
+    // If all agents have same usage, do pure random selection
+    if (minUsage === maxUsage) {
+      return availableAgents[Math.floor(Math.random() * availableAgents.length)];
+    }
+    
+    // Create weighted pool - agents with lower usage get more entries
+    const weightedPool = [];
+    availableAgents.forEach(agent => {
+      const usage = usageCount[agent];
+      // Weight calculation: higher weight for less-used agents
+      const weight = (maxUsage - usage + 1) * 3; // Multiply by 3 for stronger bias
+      
+      // Add agent to pool multiple times based on weight
+      for (let i = 0; i < weight; i++) {
+        weightedPool.push(agent);
+      }
+    });
+    
+    // Random selection from weighted pool
+    const selectedAgent = weightedPool[Math.floor(Math.random() * weightedPool.length)];
+    
+    logger.info(`Agent selection: Available: [${availableAgents.join(', ')}], Usage: [${availableAgents.map(a => `${a}:${usageCount[a]}`).join(', ')}], Selected: ${selectedAgent}`);
+    
+    return selectedAgent;
   }
 
   /**
@@ -335,8 +385,13 @@ Make this comprehensive, detailed, and actionable. This is the culmination of ex
       throw new Error('No available models configured');
     }
 
-    // Select random model from the full available models list
-    const model = this.availableModels[Math.floor(Math.random() * this.availableModels.length)];
+    if (agentType === 'reasoning' && !this.reasoningModels.length) {
+      throw new Error('No reasoning models configured');
+    }
+
+    // Select appropriate model based on agent type
+    const modelPool = agentType === 'reasoning' ? this.reasoningModels : this.availableModels;
+    const model = modelPool[Math.floor(Math.random() * modelPool.length)];
     
     logger.info(`[${agent.name.toUpperCase()}] Using model: ${model} for phase: ${phase}`);
 

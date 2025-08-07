@@ -216,8 +216,9 @@ class DatabaseService {
   }
 
   async deleteConversation(id) {
-    // Delete messages first due to foreign key constraint
+    // Delete related records first due to foreign key constraints
     await this.run('DELETE FROM messages WHERE conversation_id = ?', [id]);
+    await this.run('DELETE FROM ideas WHERE conversation_id = ?', [id]);
     return await this.run('DELETE FROM conversations WHERE id = ?', [id]);
   }
 
