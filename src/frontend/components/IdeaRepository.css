@@ -1,0 +1,475 @@
+.idea-repository {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #f8f9fa;
+}
+
+.repository-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  background: white;
+  border-bottom: 1px solid #e9ecef;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.repository-header h2 {
+  margin: 0;
+  color: #495057;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.repository-stats {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.stat {
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.stat strong {
+  color: #007bff;
+  font-weight: 600;
+}
+
+.refresh-button {
+  padding: 0.5rem;
+  background: #007bff;
+  color: white;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.refresh-button:hover {
+  background: #0056b3;
+  transform: rotate(180deg);
+}
+
+.repository-filters {
+  background: white;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.search-bar {
+  margin-bottom: 1rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  transition: border-color 0.2s ease;
+}
+
+.search-input:focus {
+  border-color: #007bff;
+}
+
+.filter-row {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-group label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #495057;
+  white-space: nowrap;
+}
+
+.filter-group select {
+  padding: 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  background: white;
+  font-size: 0.9rem;
+}
+
+.tags-filter {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.tags-filter label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #495057;
+  white-space: nowrap;
+  margin-top: 0.25rem;
+}
+
+.tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tag-filter {
+  padding: 0.25rem 0.75rem;
+  background: #f8f9fa;
+  color: #6c757d;
+  border: 1px solid #dee2e6;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.tag-filter:hover {
+  background: #e9ecef;
+  color: #495057;
+}
+
+.tag-filter.active {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.ideas-grid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+  align-content: start;
+}
+
+.idea-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.idea-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: #007bff;
+}
+
+.idea-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+  gap: 1rem;
+}
+
+.idea-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #495057;
+  line-height: 1.3;
+}
+
+.idea-category {
+  background: #007bff;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.idea-description {
+  color: #6c757d;
+  line-height: 1.5;
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+}
+
+.idea-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.idea-tag {
+  background: rgba(108, 117, 125, 0.1);
+  color: #6c757d;
+  padding: 0.2rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.idea-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f1f3f4;
+  font-size: 0.8rem;
+  color: #adb5bd;
+}
+
+.idea-date {
+  font-weight: 500;
+}
+
+.idea-source {
+  background: rgba(32, 201, 151, 0.1);
+  color: #20c997;
+  padding: 0.15rem 0.4rem;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #6c757d;
+}
+
+.empty-state p {
+  margin: 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.empty-state .hint {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.clear-filters-button {
+  background: #007bff;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  margin-top: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.clear-filters-button:hover {
+  background: #0056b3;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .repository-header {
+    padding: 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: center;
+  }
+  
+  .repository-header h2 {
+    font-size: 1.25rem;
+  }
+  
+  .repository-filters {
+    padding: 1rem;
+  }
+  
+  .filter-row {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .filter-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+  }
+  
+  .filter-group select {
+    width: 100%;
+  }
+  
+  .tags-filter {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .ideas-grid {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+    gap: 1rem;
+  }
+  
+  .idea-header {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .idea-category {
+    align-self: flex-start;
+  }
+}
+
+/* Dark theme overrides */
+.idea-repository {
+  background: #0f172a !important;
+  color: #e2e8f0;
+}
+
+.repository-header {
+  background: #1e293b !important;
+  border-bottom-color: #374151 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+.repository-header h2 {
+  color: #e2e8f0 !important;
+}
+
+.stat {
+  color: #94a3b8 !important;
+}
+
+.stat strong {
+  color: #10b981 !important;
+}
+
+.refresh-button {
+  background: #6366f1 !important;
+}
+
+.refresh-button:hover {
+  background: #4f46e5 !important;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
+}
+
+.repository-filters {
+  background: #1e293b !important;
+  border-bottom-color: #374151 !important;
+}
+
+.search-input {
+  background: #0f172a !important;
+  border-color: #374151 !important;
+  color: #e2e8f0 !important;
+}
+
+.search-input:focus {
+  border-color: #10b981 !important;
+  background: #1e293b !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25) !important;
+}
+
+.search-input::placeholder {
+  color: #64748b !important;
+}
+
+.filter-group label {
+  color: #e2e8f0 !important;
+}
+
+.filter-group select {
+  background: #0f172a !important;
+  border-color: #374151 !important;
+  color: #e2e8f0 !important;
+}
+
+.filter-group select:focus {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25) !important;
+}
+
+.tags-filter label {
+  color: #e2e8f0 !important;
+}
+
+.tag-filter {
+  background: #374151 !important;
+  color: #e2e8f0 !important;
+  border-color: #374151 !important;
+}
+
+.tag-filter:hover {
+  background: #4b5563 !important;
+}
+
+.tag-filter.active {
+  background: #10b981 !important;
+  color: white !important;
+  border-color: #10b981 !important;
+}
+
+.ideas-grid {
+  background: #0f172a !important;
+}
+
+.idea-card {
+  background: #1e293b !important;
+  border-color: #374151 !important;
+  color: #e2e8f0;
+}
+
+.idea-card:hover {
+  border-color: #10b981 !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15) !important;
+}
+
+.idea-title {
+  color: #e2e8f0 !important;
+}
+
+.idea-category {
+  background: #6366f1 !important;
+  color: white !important;
+}
+
+.idea-description {
+  color: #94a3b8 !important;
+}
+
+.idea-tag {
+  background: #374151 !important;
+  color: #e2e8f0 !important;
+}
+
+.idea-date {
+  color: #64748b !important;
+}
+
+.idea-source {
+  color: #10b981 !important;
+}
+
+.empty-state {
+  color: #94a3b8 !important;
+}
+
+.clear-filters-button {
+  background: #6366f1 !important;
+  color: white !important;
+}
+
+.clear-filters-button:hover {
+  background: #4f46e5 !important;
+}

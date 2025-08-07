@@ -1,15 +1,34 @@
 const express = require('express');
-const router = express.Router();
-const chatController = require('../controllers/chatController');
-const { validateMessageMiddleware } = require('../middleware/validation');
+const ChatController = require('../controllers/chatController');
+const validation = require('../middleware/validation');
 
-// Get chat history
-router.get('/history', chatController.getChatHistory);
+module.exports = (databaseService) => {
+  const router = express.Router();
+  const chatController = new ChatController(databaseService);
 
-// Send a new message
-router.post('/message', validateMessageMiddleware, chatController.sendMessage);
+  // Add database service to request object for middleware access
+  router.use((req, res, next) => {
+    req.db = databaseService;
+    next();
+  });
 
-// Clear chat history
-router.delete('/history', chatController.clearChatHistory);
+  // Add route logging middleware
+  router.use((req, res, next) => {
+    console.log(`[Chat Route] ${req.method} ${req.path}`);
+    next();
+  });
 
-module.exports = router; 
+  // Create a new conversation
+  router.post('/conversation', validation.validateConversationCreation, chatController.createConversation);
+
+  // Get chat history for a conversation
+  router.get('/history', validation.validateConversationId, chatController.getChatHistory);
+
+  // Send a new message
+  router.post('/message', validation.validateMessage, chatController.sendMessage);
+
+  // Clear chat history for a conversation
+  router.delete('/history', validation.validateConversationId, chatController.clearChatHistory);
+
+  return router;
+}; 

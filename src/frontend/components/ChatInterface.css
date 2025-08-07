@@ -1,0 +1,153 @@
+.chat-interface {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+.chat-interface.no-conversation {
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+}
+
+.welcome-message {
+  text-align: center;
+  max-width: 600px;
+  padding: 2rem;
+  background: #1e293b;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid #374151;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.welcome-message h2 {
+  color: #e2e8f0;
+  margin-bottom: 1rem;
+  font-size: 2rem;
+}
+
+.welcome-message p {
+  color: #94a3b8;
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+}
+
+.command-hints {
+  background: #0f172a;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+  text-align: left;
+  border: 1px solid #374151;
+}
+
+.command-hints h3 {
+  color: #e2e8f0;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.command-hints ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.command-hints li {
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.command-hints code {
+  background: #6366f1;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 500;
+  min-width: 120px;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+}
+
+.cta-button {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  padding: 0.75rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+.cta-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #374151;
+  background: #1e293b;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.conversation-info h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.conversation-id {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  opacity: 0.7;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .welcome-message {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+  
+  .welcome-message h2 {
+    font-size: 1.5rem;
+  }
+  
+  .command-hints {
+    padding: 1rem;
+  }
+  
+  .command-hints li {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .command-hints code {
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .chat-header {
+    padding: 0.75rem 1rem;
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+  }
+  
+  .conversation-info h2 {
+    font-size: 1.1rem;
+  }
+}

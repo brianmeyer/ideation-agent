@@ -1,0 +1,183 @@
+.agent-status-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.agent-status-container.active {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.ideation-progress {
+  background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%);
+  color: white;
+  padding: 0.4rem 0.75rem;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  animation: pulse 2s infinite;
+}
+
+.progress-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.agents-status {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.agent-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  min-width: 80px;
+  transition: all 0.3s ease;
+}
+
+.agent-indicator.thinking {
+  border-color: #ffc107;
+  background: rgba(255, 193, 7, 0.05);
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+.agent-indicator.active {
+  border-color: #28a745;
+  background: rgba(40, 167, 69, 0.05);
+  transform: scale(1.05);
+}
+
+.agent-indicator.complete {
+  border-color: #6c757d;
+  background: rgba(108, 117, 125, 0.05);
+}
+
+.agent-indicator.idle {
+  opacity: 0.6;
+}
+
+.agent-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.agent-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #495057;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  transition: background-color 0.3s ease;
+}
+
+.agent-indicator.thinking .status-dot {
+  background: #ffc107;
+  animation: pulse 1.5s infinite;
+}
+
+.agent-indicator.active .status-dot {
+  background: #28a745;
+  box-shadow: 0 0 6px rgba(40, 167, 69, 0.6);
+}
+
+.agent-indicator.complete .status-dot {
+  background: #6c757d;
+}
+
+.agent-indicator.idle .status-dot {
+  background: #dee2e6;
+}
+
+.status-text {
+  font-size: 0.65rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.agent-indicator.thinking .status-text {
+  color: #856404;
+}
+
+.agent-indicator.active .status-text {
+  color: #155724;
+}
+
+/* Agent-specific styling */
+.agent-indicator.creative {
+  border-left: 3px solid #ff6b6b;
+}
+
+.agent-indicator.reasoning {
+  border-left: 3px solid #4a90e2;
+}
+
+.agent-indicator.logical {
+  border-left: 3px solid #51cf66;
+}
+
+/* Animations */
+@keyframes glow {
+  from {
+    box-shadow: 0 0 5px rgba(255, 193, 7, 0.3);
+  }
+  to {
+    box-shadow: 0 0 20px rgba(255, 193, 7, 0.6);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .agent-status-container {
+    align-items: center;
+    width: 100%;
+  }
+  
+  .ideation-progress {
+    font-size: 0.7rem;
+    padding: 0.35rem 0.6rem;
+  }
+  
+  .agents-status {
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .agent-indicator {
+    min-width: 70px;
+    padding: 0.4rem;
+  }
+  
+  .agent-icon {
+    font-size: 1rem;
+  }
+  
+  .agent-label {
+    font-size: 0.6rem;
+  }
+  
+  .status-text {
+    font-size: 0.6rem;
+  }
+}
