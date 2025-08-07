@@ -47,6 +47,47 @@ const ChatInterface = ({ conversation, onNewConversation, onIdeaExtracted }) => 
 
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
+    
+    // Check if this is an ideation command
+    const isIdeationCommand = message.trim().toLowerCase().startsWith('/ideate') ||
+                             message.trim().toLowerCase().startsWith('/brainstorm') ||
+                             message.trim().toLowerCase().startsWith('/analyze') ||
+                             message.trim().toLowerCase().startsWith('/synthesize');
+    
+    // Set agent status to simulate ideation process
+    if (isIdeationCommand) {
+      // Start with all agents thinking
+      setAgentStatus({
+        creative: 'thinking',
+        reasoning: 'thinking', 
+        logical: 'thinking'
+      });
+      
+      // Simulate agent progression
+      setTimeout(() => {
+        setAgentStatus({
+          creative: 'active',
+          reasoning: 'thinking',
+          logical: 'thinking'
+        });
+      }, 1000);
+      
+      setTimeout(() => {
+        setAgentStatus({
+          creative: 'complete',
+          reasoning: 'active',
+          logical: 'thinking'
+        });
+      }, 3000);
+      
+      setTimeout(() => {
+        setAgentStatus({
+          creative: 'complete',
+          reasoning: 'complete',
+          logical: 'active'
+        });
+      }, 5000);
+    }
 
     try {
       const response = await fetch('/api/chat/message', {
@@ -73,6 +114,20 @@ const ChatInterface = ({ conversation, onNewConversation, onIdeaExtracted }) => 
         };
         setMessages(prev => [...prev, aiMessage]);
         
+        // Complete all agents if this was an ideation session
+        if (isIdeationCommand) {
+          setAgentStatus({
+            creative: 'complete',
+            reasoning: 'complete',
+            logical: 'complete'
+          });
+          
+          // Reset to idle after a delay
+          setTimeout(() => {
+            setAgentStatus({});
+          }, 3000);
+        }
+        
         // Check if ideas were extracted
         if (data.ideasExtracted) {
           onIdeaExtracted?.();
@@ -89,6 +144,13 @@ const ChatInterface = ({ conversation, onNewConversation, onIdeaExtracted }) => 
       }]);
     } finally {
       setIsLoading(false);
+      
+      // Reset agent status on error
+      if (isIdeationCommand) {
+        setTimeout(() => {
+          setAgentStatus({});
+        }, 1000);
+      }
     }
   };
 

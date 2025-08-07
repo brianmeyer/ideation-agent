@@ -253,6 +253,112 @@
   background: #6c757d;
 }
 
+/* Dark theme overrides - More specific selectors for higher priority */
+.chat-interface .message-list,
+.message-list {
+  background: linear-gradient(to bottom, #0f172a, #1e293b) !important;
+  color: #e2e8f0 !important;
+}
+
+.message-sender {
+  color: #e2e8f0 !important;
+}
+
+.message-time {
+  color: #94a3b8 !important;
+}
+
+.chat-interface .message-content,
+.message-content {
+  background: #1e293b !important;
+  border: 1px solid #374151 !important;
+  color: #e2e8f0 !important;
+}
+
+.message.user .message-content {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+  color: white !important;
+}
+
+.message.ai .message-content {
+  background: #1e293b !important;
+  border: 1px solid #374151 !important;
+  color: #e2e8f0 !important;
+}
+
+.message-heading {
+  color: #e2e8f0 !important;
+}
+
+.message-subheading {
+  color: #94a3b8 !important;
+}
+
+.inline-code {
+  background: rgba(148, 163, 184, 0.2) !important;
+  color: #e2e8f0 !important;
+}
+
+.message.user .inline-code {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.code-block {
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #374151;
+}
+
+.message-metadata {
+  border-top-color: #374151 !important;
+  color: #94a3b8 !important;
+}
+
+.agent-activity {
+  border-top-color: #374151 !important;
+}
+
+.agent-status {
+  color: #94a3b8 !important;
+}
+
+.command-badge {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #10b981 !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+.memory-indicator {
+  background: rgba(139, 92, 246, 0.2) !important;
+  color: #8b5cf6 !important;
+  border-color: rgba(139, 92, 246, 0.3) !important;
+}
+
+.session-badge {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #10b981 !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+.loading-dots span {
+  background-color: #10b981 !important;
+}
+
+.agent-badge.creative {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #ef4444 !important;
+}
+
+.agent-badge.reasoning {
+  background: rgba(59, 130, 246, 0.2) !important;
+  color: #3b82f6 !important;
+}
+
+.agent-badge.logical {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #10b981 !important;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .message-list {

@@ -18,29 +18,28 @@ class AgentOrchestrator {
     this.agents = {
       creative: {
         name: 'Creative',
-        emoji: '💡',
-        models: config.MODELS?.creative || [
-          'deepseek-r1-distill-llama-70b',
-          'meta-llama/llama-4-scout-17b-16e-instruct'
-        ]
+        emoji: '💡'
       },
       reasoning: {
         name: 'Reasoning',
-        emoji: '🧠',
-        models: config.MODELS?.reasoning || [
-          'openai/gpt-oss-120b',
-          'gemma2-9b-it'
-        ]
+        emoji: '🧠'
       },
       logical: {
         name: 'Logical',
-        emoji: '⚖️',
-        models: config.MODELS?.logical || [
-          'qwen/qwen3-32b',
-          'meta-llama/llama-4-scout-17b-16e-instruct'
-        ]
+        emoji: '⚖️'
       }
     };
+
+    // All agents can use any available model randomly
+    this.availableModels = config.AVAILABLE_MODELS || [
+      'deepseek-r1-distill-llama-70b',
+      'meta-llama/llama-4-scout-17b-16e-instruct',
+      'moonshotai/kimi-k2-instruct',
+      'openai/gpt-oss-120b',
+      'qwen/qwen3-32b',
+      'llama-3.3-70b-versatile',
+      'gemma2-9b-it'
+    ];
 
     this.timeLimit = parseInt(process.env.IDEATION_TIME_LIMIT) || 60000; // 60 seconds default
   }
@@ -55,77 +54,266 @@ class AgentOrchestrator {
     const startTime = Date.now();
     
     try {
-      logger.info('Starting ideation session', {
+      logger.info('Starting 4-phase ideation session', {
         prompt: prompt.substring(0, 100),
-        contextLength: context.length
+        contextLength: context.length,
+        timeLimit: this.timeLimit
       });
 
-      // Phase 1: Initial brainstorming (parallel)
-      const initialResults = await this.executeBrainstormingPhase(prompt, context);
-      
-      // Check time limit
-      if (Date.now() - startTime > this.timeLimit * 0.7) {
-        logger.warn('Ideation session approaching time limit, skipping refinement');
-        return this.synthesizeResults(initialResults, startTime);
-      }
+      let sessionResults = { 
+        phase1: null, 
+        phase2: [], 
+        phase3: null, 
+        final: null 
+      };
 
-      // Phase 2: Refinement (parallel)
-      const refinedResults = await this.executeRefinementPhase(prompt, context, initialResults);
+      // Phase 1: Fixed sequence - Creative → Logical → Reasoning
+      logger.info('=== PHASE 1: INITIAL IDEATION (Creative → Logical → Reasoning) ===');
+      sessionResults.phase1 = await this.executePhase1(prompt, context);
       
-      // Phase 3: Synthesis
-      return this.synthesizeResults(refinedResults || initialResults, startTime);
+      // Phase 2: 60-second randomized agents (no back-to-back repeats)
+      logger.info('=== PHASE 2: RANDOMIZED EXPANSION (60 seconds) ===');
+      const phase2StartTime = Date.now();
+      sessionResults.phase2 = await this.executePhase2(prompt, context, sessionResults.phase1, phase2StartTime);
+      
+      // Phase 3: Fixed sequence refinement - Creative → Logical → Reasoning  
+      logger.info('=== PHASE 3: REFINEMENT (Creative → Logical → Reasoning) ===');
+      sessionResults.phase3 = await this.executePhase3(prompt, context, sessionResults.phase1, sessionResults.phase2);
+      
+      // Phase 4: Final Summary Agent
+      logger.info('=== PHASE 4: FINAL EVALUATION & SYNTHESIS ===');
+      const finalResult = await this.executeFinalSummary(prompt, context, sessionResults);
+
+      return finalResult;
 
     } catch (error) {
-      logger.error('Ideation session failed', error);
+      logger.error('Ideation session failed', { 
+        message: error.message,
+        name: error.name
+      });
       throw new Error(`Ideation session failed: ${error.message}`);
     }
   }
 
   /**
-   * Execute initial brainstorming phase with all agents
-   * @param {string} prompt - User prompt
-   * @param {Array} context - Conversation context
-   * @returns {Promise<Object>} Results from all agents
+   * Phase 1: Creative → Logical → Reasoning (fixed sequence)
    */
-  async executeBrainstormingPhase(prompt, context) {
-    const tasks = [
-      this.executeAgent('creative', 'brainstorming', prompt, context),
-      this.executeAgent('reasoning', 'initial_analysis', prompt, context),
-      this.executeAgent('logical', 'initial_evaluation', prompt, context)
-    ];
-
-    const results = await Promise.allSettled(tasks);
+  async executePhase1(prompt, context) {
+    let results = { creative: null, logical: null, reasoning: null };
     
-    return {
-      creative: this.extractResult(results[0], 'creative'),
-      reasoning: this.extractResult(results[1], 'reasoning'),
-      logical: this.extractResult(results[2], 'logical')
-    };
+    // Step 1: Creative Agent generates initial ideas
+    logger.info('Phase 1.1: Creative Agent - Initial brainstorming');
+    results.creative = await this.executeAgent('creative', 'phase1_creative', prompt, context);
+    
+    // Step 2: Logical Agent evaluates creative ideas
+    logger.info('Phase 1.2: Logical Agent - Initial evaluation');
+    const logicalPrompt = `Original request: "${prompt}"\n\nCreative Agent's Initial Ideas:\n${results.creative || 'No creative output'}\n\nProvide logical evaluation, feasibility assessment, and identify potential challenges.`;
+    results.logical = await this.executeAgent('logical', 'phase1_logical', logicalPrompt, context);
+    
+    // Step 3: Reasoning Agent analyzes everything
+    logger.info('Phase 1.3: Reasoning Agent - Analytical reasoning');
+    const reasoningPrompt = `Original request: "${prompt}"\n\nCreative Ideas:\n${results.creative || 'No creative output'}\n\nLogical Evaluation:\n${results.logical || 'No logical evaluation'}\n\nProvide structured analytical reasoning and identify implementation pathways.`;
+    results.reasoning = await this.executeAgent('reasoning', 'phase1_reasoning', reasoningPrompt, context);
+    
+    return results;
   }
 
   /**
-   * Execute refinement phase with all agents
-   * @param {string} prompt - User prompt
-   * @param {Array} context - Conversation context
-   * @param {Object} initialResults - Results from brainstorming phase
-   * @returns {Promise<Object>} Refined results from all agents
+   * Phase 2: 60 seconds of randomized agents (no back-to-back repeats)
    */
-  async executeRefinementPhase(prompt, context, initialResults) {
-    // Create refinement context including initial results
-    const refinementContext = this.buildRefinementContext(prompt, initialResults);
+  async executePhase2(prompt, context, phase1Results, startTime) {
+    const phase2TimeLimit = 60000; // 60 seconds
+    let expansionResults = [];
+    let lastAgent = null;
+    let iterationCount = 0;
+    
+    const agents = ['creative', 'logical', 'reasoning'];
+    
+    while (Date.now() - startTime < phase2TimeLimit && iterationCount < 10) {
+      iterationCount++;
+      
+      // Select random agent (different from last one)
+      let availableAgents = agents.filter(agent => agent !== lastAgent);
+      const selectedAgent = availableAgents[Math.floor(Math.random() * availableAgents.length)];
+      
+      logger.info(`Phase 2.${iterationCount}: ${selectedAgent.toUpperCase()} Agent - Expansion iteration`);
+      
+      // Build comprehensive context with all previous work
+      let expansionContext = this.buildExpansionContext(prompt, phase1Results, expansionResults);
+      
+      const response = await this.executeAgent(selectedAgent, `phase2_${selectedAgent}`, expansionContext, context);
+      
+      if (response) {
+        expansionResults.push({
+          agent: selectedAgent,
+          iteration: iterationCount,
+          content: response,
+          timestamp: Date.now() - startTime
+        });
+      }
+      
+      lastAgent = selectedAgent;
+    }
+    
+    logger.info(`Phase 2 completed with ${expansionResults.length} expansion iterations in ${(Date.now() - startTime)/1000}s`);
+    return expansionResults;
+  }
 
-    const tasks = [
-      this.executeAgent('creative', 'refinement_creative', refinementContext, context),
-      this.executeAgent('reasoning', 'refinement_reasoning', refinementContext, context),
-      this.executeAgent('logical', 'refinement_logical', refinementContext, context)
-    ];
+  /**
+   * Phase 3: Creative → Logical → Reasoning (refinement sequence) 
+   */
+  async executePhase3(prompt, context, phase1Results, phase2Results) {
+    let results = { creative: null, logical: null, reasoning: null };
+    
+    // Build comprehensive context from phases 1 and 2
+    const refinementContext = this.buildRefinementContext(prompt, phase1Results, phase2Results);
+    
+    // Step 1: Creative Agent refines and polishes ideas
+    logger.info('Phase 3.1: Creative Agent - Final refinement');
+    const creativePrompt = refinementContext + '\n\nRefine and polish the creative concepts with final innovative touches.';
+    results.creative = await this.executeAgent('creative', 'phase3_creative', creativePrompt, context);
+    
+    // Step 2: Logical Agent provides final evaluation
+    logger.info('Phase 3.2: Logical Agent - Final logical assessment');
+    const logicalPrompt = refinementContext + `\n\nRefined Creative Concepts:\n${results.creative || 'No refined creative output'}\n\nProvide final logical assessment with detailed implementation recommendations.`;
+    results.logical = await this.executeAgent('logical', 'phase3_logical', logicalPrompt, context);
+    
+    // Step 3: Reasoning Agent provides comprehensive analysis
+    logger.info('Phase 3.3: Reasoning Agent - Final analytical synthesis');
+    const reasoningPrompt = refinementContext + `\n\nRefined Creative:\n${results.creative || 'No creative output'}\n\nFinal Logical Assessment:\n${results.logical || 'No logical assessment'}\n\nProvide comprehensive analytical synthesis and structured recommendations.`;
+    results.reasoning = await this.executeAgent('reasoning', 'phase3_reasoning', reasoningPrompt, context);
+    
+    return results;
+  }
 
-    const results = await Promise.allSettled(tasks);
+  /**
+   * Build expansion context for Phase 2
+   */
+  buildExpansionContext(prompt, phase1Results, expansionResults) {
+    let context = `Original Request: "${prompt}"\n\n`;
+    
+    context += '=== PHASE 1 FOUNDATION ===\n';
+    if (phase1Results.creative) context += `Creative Foundation:\n${phase1Results.creative}\n\n`;
+    if (phase1Results.logical) context += `Logical Foundation:\n${phase1Results.logical}\n\n`;
+    if (phase1Results.reasoning) context += `Reasoning Foundation:\n${phase1Results.reasoning}\n\n`;
+    
+    if (expansionResults.length > 0) {
+      context += '=== PHASE 2 EXPANSIONS ===\n';
+      expansionResults.forEach((result, index) => {
+        context += `${result.agent.toUpperCase()} Expansion ${result.iteration}:\n${result.content}\n\n`;
+      });
+    }
+    
+    context += 'Build upon ALL the above work. Expand, enhance, and add new dimensions to the evolving ideas.';
+    return context;
+  }
+
+  /**
+   * Build refinement context for Phase 3
+   */
+  buildRefinementContext(prompt, phase1Results, phase2Results) {
+    let context = `Original Request: "${prompt}"\n\n`;
+    
+    context += '=== COMPLETE IDEATION HISTORY ===\n\n';
+    
+    context += 'PHASE 1 - FOUNDATION:\n';
+    if (phase1Results.creative) context += `Creative: ${phase1Results.creative}\n\n`;
+    if (phase1Results.logical) context += `Logical: ${phase1Results.logical}\n\n`;
+    if (phase1Results.reasoning) context += `Reasoning: ${phase1Results.reasoning}\n\n`;
+    
+    if (phase2Results.length > 0) {
+      context += 'PHASE 2 - EXPANSIONS:\n';
+      phase2Results.forEach((result) => {
+        context += `${result.agent.toUpperCase()} (${result.timestamp}ms): ${result.content}\n\n`;
+      });
+    }
+    
+    return context;
+  }
+
+  /**
+   * Phase 4: Final Summary Agent - Feasibility/Innovation evaluation, picks 1-2 ideas, full summary
+   */
+  async executeFinalSummary(prompt, context, sessionResults) {
+    logger.info('Phase 4: Final Summary Agent - Comprehensive evaluation and synthesis');
+    
+    // Build the ultimate context with ALL session data
+    let summaryContext = `Original Request: "${prompt}"\n\n`;
+    
+    summaryContext += '=== COMPLETE 3-PHASE IDEATION SESSION ===\n\n';
+    
+    // Phase 1 data
+    summaryContext += 'PHASE 1 (Creative → Logical → Reasoning):\n';
+    if (sessionResults.phase1?.creative) summaryContext += `Creative: ${sessionResults.phase1.creative}\n\n`;
+    if (sessionResults.phase1?.logical) summaryContext += `Logical: ${sessionResults.phase1.logical}\n\n`;
+    if (sessionResults.phase1?.reasoning) summaryContext += `Reasoning: ${sessionResults.phase1.reasoning}\n\n`;
+    
+    // Phase 2 data
+    if (sessionResults.phase2.length > 0) {
+      summaryContext += 'PHASE 2 (60-second Randomized Expansion):\n';
+      sessionResults.phase2.forEach((result) => {
+        summaryContext += `${result.agent.toUpperCase()} Agent: ${result.content}\n\n`;
+      });
+    }
+    
+    // Phase 3 data  
+    summaryContext += 'PHASE 3 (Final Refinement - Creative → Logical → Reasoning):\n';
+    if (sessionResults.phase3?.creative) summaryContext += `Creative Refinement: ${sessionResults.phase3.creative}\n\n`;
+    if (sessionResults.phase3?.logical) summaryContext += `Logical Refinement: ${sessionResults.phase3.logical}\n\n`;
+    if (sessionResults.phase3?.reasoning) summaryContext += `Reasoning Refinement: ${sessionResults.phase3.reasoning}\n\n`;
+    
+    // Final prompt for summary agent
+    summaryContext += `=== YOUR TASK AS FINAL SUMMARY AGENT ===
+
+You are the Final Summary Agent responsible for synthesizing this entire 4-phase collaborative ideation session. Provide a COMPREHENSIVE and DETAILED final report that includes:
+
+## 1. EXECUTIVE SUMMARY
+- Brief overview of the collaborative ideation process
+- Key themes and patterns that emerged across all phases
+
+## 2. PHASE-BY-PHASE BREAKDOWN
+### Phase 1 - Initial Ideation (Creative → Logical → Reasoning):
+- Summarize each agent's key contributions
+- Highlight initial concepts and core ideas generated
+
+### Phase 2 - Randomized Expansion (60 seconds, 10 iterations):
+- Describe how ideas evolved through random agent interactions
+- Note key expansions, pivots, or new dimensions added
+- Explain the collaborative build-up of concepts
+
+### Phase 3 - Refinement (Creative → Logical → Reasoning):
+- Show how agents refined and polished the concepts
+- Detail final improvements and critical assessments made
+
+## 3. COMPREHENSIVE IDEA DESCRIPTIONS
+For each major idea that emerged:
+- **Detailed Description**: What it is, how it works, key features
+- **Innovation Assessment**: What makes it innovative or unique
+- **Feasibility Analysis**: Technical, market, and implementation considerations
+- **Market Potential**: Target audience, market size, business model
+- **Implementation Complexity**: Development timeline, resources needed
+
+## 4. FINAL RECOMMENDATIONS
+- **Selected Ideas**: Choose 1-2 ideas with detailed justification
+- **Why These Ideas**: Comprehensive reasoning for selections
+- **Implementation Roadmap**: Specific phases, milestones, timelines
+- **Resource Requirements**: Team, funding, partnerships needed
+- **Risk Assessment**: Major risks and mitigation strategies
+
+## 5. NEXT STEPS & ACTION PLAN
+- **Immediate Actions (0-3 months)**: Specific steps to begin
+- **Medium-term Milestones (3-12 months)**: Development phases
+- **Long-term Vision (1-3 years)**: Scale and expansion strategy
+- **Success Metrics**: How to measure progress and success
+
+Make this comprehensive, detailed, and actionable. This is the culmination of extensive AI collaboration and should reflect that depth.`;
+
+    const finalSummary = await this.executeAgent('reasoning', 'final_summary', summaryContext, context);
     
     return {
-      creative: this.extractResult(results[0], 'creative') || initialResults.creative,
-      reasoning: this.extractResult(results[1], 'reasoning') || initialResults.reasoning,
-      logical: this.extractResult(results[2], 'logical') || initialResults.logical
+      content: finalSummary,
+      sessionData: sessionResults,
+      totalPhases: 4
     };
   }
 
@@ -139,12 +327,16 @@ class AgentOrchestrator {
    */
   async executeAgent(agentType, phase, prompt, context) {
     const agent = this.agents[agentType];
-    if (!agent || !agent.models.length) {
-      throw new Error(`Agent ${agentType} not configured or has no models`);
+    if (!agent) {
+      throw new Error(`Agent ${agentType} not configured`);
     }
 
-    // Select random model for this agent
-    const model = agent.models[Math.floor(Math.random() * agent.models.length)];
+    if (!this.availableModels.length) {
+      throw new Error('No available models configured');
+    }
+
+    // Select random model from the full available models list
+    const model = this.availableModels[Math.floor(Math.random() * this.availableModels.length)];
     
     logger.info(`[${agent.name.toUpperCase()}] Using model: ${model} for phase: ${phase}`);
 
@@ -159,7 +351,7 @@ class AgentOrchestrator {
           { role: 'user', content: userPrompt }
         ],
         temperature: this.getTemperatureForPhase(agentType, phase),
-        max_tokens: 1500,
+        max_tokens: phase === 'final_summary' ? 4000 : 1500,
         stream: false
       }, {
         headers: {
@@ -177,15 +369,15 @@ class AgentOrchestrator {
       // Clean up response
       const cleanContent = this.cleanResponse(content);
       
-      if (!this.validateResponse(cleanContent, agentType)) {
-        logger.warn(`${agent.name} agent response validation failed, using as-is for performance`);
-      }
-
       logger.info(`Received response for ${agentType} agent using model ${model} (${cleanContent.length} characters)`);
       return cleanContent;
 
     } catch (error) {
-      logger.error(`Error executing ${agentType} agent:`, error);
+      logger.error(`Error executing ${agentType} agent:`, { 
+        message: error.message, 
+        status: error.response?.status,
+        statusText: error.response?.statusText
+      });
       
       // Return fallback response instead of throwing
       return this.getFallbackResponse(agentType, phase, prompt);
@@ -206,12 +398,19 @@ class AgentOrchestrator {
     };
 
     const phaseModifiers = {
-      brainstorming: 'Focus on generating diverse, creative ideas without limitation.',
-      initial_analysis: 'Focus on analyzing the problem and identifying key considerations.',
-      initial_evaluation: 'Focus on evaluating feasibility and potential challenges.',
-      refinement_creative: 'Build upon and enhance the existing ideas with creative improvements.',
-      refinement_reasoning: 'Deepen the analysis and provide more structured reasoning.',
-      refinement_logical: 'Refine the evaluation with more detailed logical assessment.'
+      phase1_creative: 'Phase 1: Generate initial innovative ideas without limitations.',
+      phase1_logical: 'Phase 1: Evaluate creative ideas for feasibility and identify challenges.',
+      phase1_reasoning: 'Phase 1: Provide structured analytical reasoning on ideas and evaluation.',
+      
+      phase2_creative: 'Phase 2 Expansion: Build upon existing ideas with new creative dimensions.',
+      phase2_logical: 'Phase 2 Expansion: Expand logical evaluation with additional implementation strategies.',  
+      phase2_reasoning: 'Phase 2 Expansion: Deepen analytical insights and identify new considerations.',
+      
+      phase3_creative: 'Phase 3 Refinement: Polish and perfect creative concepts with final innovations.',
+      phase3_logical: 'Phase 3 Refinement: Provide comprehensive final logical assessment.',
+      phase3_reasoning: 'Phase 3 Refinement: Synthesize all analysis into structured recommendations.',
+      
+      final_summary: 'Final Summary Agent: Evaluate all phases, select best 1-2 ideas, summarize process, provide actionable next steps.'
     };
 
     return `${basePrompts[agentType]} ${phaseModifiers[phase] || ''}
@@ -240,29 +439,6 @@ Always provide substantive, detailed responses that demonstrate deep thinking. A
   }
 
   /**
-   * Build refinement context including initial results
-   * @param {string} prompt - Original prompt
-   * @param {Object} initialResults - Initial brainstorming results
-   * @returns {string} Refinement context
-   */
-  buildRefinementContext(prompt, initialResults) {
-    return `Original Prompt: ${prompt}
-
-Previous Ideas Generated:
-
-Creative Perspective:
-${initialResults.creative || 'No creative input available'}
-
-Reasoning Analysis:
-${initialResults.reasoning || 'No reasoning analysis available'}
-
-Logical Evaluation:
-${initialResults.logical || 'No logical evaluation available'}
-
-Now refine and improve these ideas with additional insights.`;
-  }
-
-  /**
    * Get appropriate temperature for agent and phase
    * @param {string} agentType - Type of agent
    * @param {string} phase - Phase of ideation
@@ -270,12 +446,12 @@ Now refine and improve these ideas with additional insights.`;
    */
   getTemperatureForPhase(agentType, phase) {
     const temperatures = {
-      creative: { brainstorming: 0.9, refinement_creative: 0.8 },
-      reasoning: { initial_analysis: 0.6, refinement_reasoning: 0.5 },
-      logical: { initial_evaluation: 0.4, refinement_logical: 0.3 }
+      creative: 0.9,
+      reasoning: 0.6,
+      logical: 0.4
     };
 
-    return temperatures[agentType]?.[phase] || 0.7;
+    return temperatures[agentType] || 0.7;
   }
 
   /**
@@ -289,40 +465,6 @@ Now refine and improve these ideas with additional insights.`;
       .replace(/\*\*Note:.*$/gm, '') // Remove note sections
       .replace(/^(Human|Assistant):\s*/gm, '') // Remove role prefixes
       .trim();
-  }
-
-  /**
-   * Validate agent response quality
-   * @param {string} content - Agent response content
-   * @param {string} agentType - Type of agent
-   * @returns {boolean} Is response valid
-   */
-  validateResponse(content, agentType) {
-    if (!content || content.length < 50) return false;
-    
-    // Check for minimum expected content based on agent type
-    const expectedPatterns = {
-      creative: /idea|innovation|creative|solution/i,
-      reasoning: /analysis|because|therefore|reason/i,
-      logical: /evaluate|assess|pros|cons|feasible/i
-    };
-
-    return expectedPatterns[agentType]?.test(content) || true;
-  }
-
-  /**
-   * Extract result from Promise.allSettled result
-   * @param {Object} result - Promise result
-   * @param {string} agentType - Type of agent for fallback
-   * @returns {string|null} Extracted result or null
-   */
-  extractResult(result, agentType) {
-    if (result.status === 'fulfilled') {
-      return result.value;
-    } else {
-      logger.error(`${agentType} agent failed:`, result.reason);
-      return null;
-    }
   }
 
   /**
@@ -340,44 +482,6 @@ Now refine and improve these ideas with additional insights.`;
     };
 
     return fallbacks[agentType] || 'Technical difficulties prevented response generation.';
-  }
-
-  /**
-   * Synthesize results from all agents into final response
-   * @param {Object} results - Results from all agents
-   * @param {number} startTime - Session start time
-   * @returns {Object} Synthesized response
-   */
-  synthesizeResults(results, startTime) {
-    const duration = Date.now() - startTime;
-    const durationSeconds = (duration / 1000).toFixed(1);
-
-    // Build the final ideation response
-    let response = `# 🚀 Multi-Agent Ideation Results\n\n`;
-
-    if (results.creative) {
-      response += `## 💡 Creative Perspective\n${results.creative}\n\n`;
-    }
-
-    if (results.reasoning) {
-      response += `## 🧠 Reasoning Analysis\n${results.reasoning}\n\n`;
-    }
-
-    if (results.logical) {
-      response += `## ⚖️ Logical Evaluation\n${results.logical}\n\n`;
-    }
-
-    response += `---\n*Ideation completed in ${durationSeconds}s using multi-agent AI collaboration*`;
-
-    return {
-      content: response,
-      duration,
-      agents: {
-        creative: !!results.creative,
-        reasoning: !!results.reasoning,
-        logical: !!results.logical
-      }
-    };
   }
 }
 
