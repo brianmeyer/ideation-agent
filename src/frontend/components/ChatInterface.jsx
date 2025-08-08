@@ -3,12 +3,14 @@ import AgentStatusIndicator from './AgentStatusIndicator';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import './ChatInterface.css';
+import { useToast } from './Toast.jsx';
 
 const ChatInterface = ({ conversation, onNewConversation, onIdeaExtracted }) => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [agentStatus, setAgentStatus] = useState({});
   const [activeTimeouts, setActiveTimeouts] = useState([]);
+  const { show } = useToast();
 
   useEffect(() => {
     if (conversation) {
@@ -28,28 +30,36 @@ const ChatInterface = ({ conversation, onNewConversation, onIdeaExtracted }) => 
 
   const loadMessages = async () => {
     if (!conversation) return;
-    
     // Clear messages first to ensure clean state
     setMessages([]);
-    
     try {
       const response = await fetch(`/api/chat/history?conversationId=${conversation.id}`);
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          setMessages(data.history || []);
+          const mapped = (data.history || []).map((m, idx) => ({
+            id: m.id || `${m.timestamp || Date.now()}-${idx}`,
+            content: m.content,
+            sender: m.role === 'user' ? 'user' : 'ai',
+            timestamp: m.timestamp || new Date().toISOString(),
+            metadata: m.metadata || null
+          }));
+          setMessages(mapped);
         }
       }
     } catch (error) {
       console.error('Failed to load messages:', error);
+      show('Failed to load messages', { type: 'error' });
     }
   };
 
   const handleSendMessage = async (message) => {
-    if (!conversation) {
+    let currentConversation = conversation;
+    if (!currentConversation) {
       // Create new conversation if none exists
       const newConv = await onNewConversation('New Chat');
       if (!newConv) return;
+      currentConversation = newConv;
     }
 
     const userMessage = {
@@ -161,7 +171,7 @@ const ChatInterface = ({ conversation, onNewConversation, onIdeaExtracted }) => 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          conversationId: conversation.id,
+          conversationId: currentConversation.id,
           message: message
         })
       });
@@ -205,6 +215,7 @@ const ChatInterface = ({ conversation, onNewConversation, onIdeaExtracted }) => 
       }
     } catch (error) {
       console.error('Failed to send message:', error);
+      show('Failed to send message', { type: 'error' });
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         content: 'Sorry, I encountered an error. Please try again.',

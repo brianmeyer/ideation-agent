@@ -165,7 +165,8 @@ class APIClient {
   }
 
   async clearChatHistory(conversationId) {
-    return this.delete('/chat/history', { conversationId });
+    const qs = new URLSearchParams({ conversationId }).toString();
+    return this.request(`/chat/history?${qs}`, { method: 'DELETE' });
   }
 
   // Ideas API methods

@@ -35,6 +35,7 @@ class ChatController {
 
       // Format messages for compatibility with existing frontend
       const history = conversation.messages.map(msg => ({
+        id: msg.id,
         role: msg.role,
         content: msg.content,
         timestamp: msg.created_at,

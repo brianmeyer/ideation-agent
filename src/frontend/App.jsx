@@ -3,6 +3,7 @@ import ConversationList from './components/ConversationList';
 import ChatInterface from './components/ChatInterface';
 import IdeaRepository from './components/IdeaRepository';
 import apiClient from './services/apiClient';
+import { useToast } from './components/Toast.jsx';
 import './styles/App.css';
 
 const App = () => {
@@ -11,6 +12,8 @@ const App = () => {
   const [ideas, setIdeas] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const [view, setView] = useState('chat'); // 'chat' or 'ideas'
+
+  const { show } = useToast();
 
   useEffect(() => {
     // Skip Socket.IO for now to avoid hanging
@@ -24,9 +27,19 @@ const App = () => {
   const loadConversations = async () => {
     try {
       const data = await apiClient.getConversations();
-      setConversations(data.data || []);
+      const list = data.data || [];
+      setConversations(list);
+      // Restore last active conversation if available
+      const lastId = localStorage.getItem('lastActiveConversationId');
+      if (lastId) {
+        const found = list.find(c => c.id === lastId);
+        if (found) {
+          setActiveConversation(found);
+        }
+      }
     } catch (error) {
-      console.error('Failed to load conversations:', error.getUserMessage());
+      console.error('Failed to load conversations:', error);
+      show(error.getUserMessage ? error.getUserMessage() : 'Failed to load conversations', { type: 'error' });
     }
   };
 
@@ -35,12 +48,14 @@ const App = () => {
       const data = await apiClient.getIdeas();
       setIdeas(data.ideas || []);
     } catch (error) {
-      console.error('Failed to load ideas:', error.getUserMessage());
+      console.error('Failed to load ideas:', error);
+      show(error.getUserMessage ? error.getUserMessage() : 'Failed to load ideas', { type: 'error' });
     }
   };
 
   const handleConversationSelect = (conversation) => {
     setActiveConversation(conversation);
+    localStorage.setItem('lastActiveConversationId', conversation.id);
     setView('chat');
   };
 
@@ -50,10 +65,12 @@ const App = () => {
       const newConversation = data.conversation;
       setConversations(prev => [newConversation, ...prev]);
       setActiveConversation(newConversation);
+      localStorage.setItem('lastActiveConversationId', newConversation.id);
       setView('chat');
       return newConversation;
     } catch (error) {
-      console.error('Failed to create conversation:', error.getUserMessage());
+      console.error('Failed to create conversation:', error);
+      show(error.getUserMessage ? error.getUserMessage() : 'Failed to create conversation', { type: 'error' });
     }
   };
 
@@ -67,9 +84,12 @@ const App = () => {
       // If deleted conversation was active, clear active conversation
       if (activeConversation?.id === conversationId) {
         setActiveConversation(null);
+        localStorage.removeItem('lastActiveConversationId');
       }
+      show('Conversation deleted', { type: 'success', duration: 2000 });
     } catch (error) {
-      console.error('Failed to delete conversation:', error.getUserMessage());
+      console.error('Failed to delete conversation:', error);
+      show(error.getUserMessage ? error.getUserMessage() : 'Failed to delete conversation', { type: 'error' });
       throw error; // Re-throw so the component can handle it
     }
   };
