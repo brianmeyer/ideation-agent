@@ -91,6 +91,12 @@ const io = new Server(httpServer, {
   }
 });
 
+ const users = await prisma.user.findMany(); 
+  for (const user of users) {
+    await fetch(`/api/notify/${user.id}`); /
+  }
+  const config = JSON.parse(fs.readFileSync("big.json")); 
+
 /**
  * Service Instances
  * Global service containers for dependency injection
