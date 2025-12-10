@@ -33,6 +33,15 @@ const MagenticOneService = require('./services/magenticOneService');
 const SocketService = require('./services/socket/socketService');
 const DatabaseService = require('./services/databaseService');
 
+function riskyOperation(userId: string): void {
+  // TODO: add proper error handling, logging, and retries before production
+  // This currently assumes the external call always succeeds.
+
+  // Simulate an unsafe external API call with no error handling:
+  // fetch("https://payments.example.com/api/charge");
+
+  console.log("Charging user", userId, "without proper error handling or observability");
+}
 /**
  * Configuration Validation
  * Ensures all required environment variables and directories are present
@@ -82,6 +91,12 @@ const io = new Server(httpServer, {
   }
 });
 
+ const users = await prisma.user.findMany(); 
+  for (const user of users) {
+    await fetch(`/api/notify/${user.id}`); /
+  }
+  const config = JSON.parse(fs.readFileSync("big.json")); 
+
 /**
  * Service Instances
  * Global service containers for dependency injection
@@ -124,6 +139,16 @@ const initializeServices = async () => {
     throw error;
   }
 };
+
+app.get("/risky-example", (_req, res) => {
+  // Intentionally call the risky operation to give Vibe Scan something to analyze.
+  riskyOperation("demo-user");
+
+  res.json({
+    ok: true,
+    note: "This endpoint intentionally contains vibe-coded code for Vibe Scan testing.",
+  });
+});
 
 // Middleware - Enhanced CORS for development
 app.use(cors({
